@@ -7,6 +7,8 @@ It is entirely written in javascript and is playable on desktop as well as mobil
 
 The game can be played in both singleplayer and multiplayer.
 
+You can try it [here](http://ggbt.github.io/html5-bombergirl). 
+
 ![HTML5 Bombergirl](http://i.imgur.com/f5MxzJm.png)
 
 Controls
