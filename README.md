@@ -3,12 +3,16 @@ HTML5 Bombergirl 1.8
 
 This is an almost complete rewrite of MattSkalas [html5-bombergirl](https://github.com/MattSkala/html5-bombergirl).
 
+It is entirely written in javascript and is playable on desktop as well as mobile browsers. I
+
+The game can be played in both singleplayer and multiplayer.
+
 ![HTML5 Bombergirl](http://i.imgur.com/f5MxzJm.png)
 
 Controls
 --------
 P1: arrows + / <br>
-p2: wasd + TAB
+P2: wasd + TAB
 
 Changes
 -------
@@ -22,6 +26,7 @@ Changes
 - Sound effects added when collecting bonuses
 - Each player accumulates points when collecting bonuses now
 - Control system reworked. You can hold the bomb key now and bombs will be placed one after the other
+- New menu screen
 - Pause and mute buttons have been added
 - When bots die they turn into a ghost and fly to heaven
 - After a player dies she turns into a ghost and can still roam the map
