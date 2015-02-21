@@ -7,7 +7,7 @@ This is an almost complete rewrite of MattSkalas [html5-bombergirl](https://gith
 
 Controls
 --------
-P1: arrows + /
+P1: arrows + / <br>
 p2: wasd + TAB
 
 Changes
