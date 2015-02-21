@@ -3,7 +3,7 @@ HTML5 Bombergirl 1.8
 
 This is an almost complete rewrite of MattSkalas [html5-bombergirl](https://github.com/MattSkala/html5-bombergirl).
 
-It is entirely written in javascript and is playable on desktop as well as mobile browsers. I
+It is entirely written in javascript and is playable on desktop as well as mobile browsers.
 
 The game can be played in both singleplayer and multiplayer.
 
