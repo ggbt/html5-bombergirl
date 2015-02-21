@@ -1,25 +1,13 @@
-Bonus = Entity.extend({
-    types: ['speed', 'bomb', 'fire'],
+/**
+ * @author Gabriel Titerlea
+ */
+var Bonus = function ( gridPosition, type, image) {
+  this.type = type;
 
-    type: '',
-    position: {},
-    bmp: null,
+  this.position = Utils.convertToPixelPosition( gridPosition);
+  this.gridPosition = gridPosition;
 
-    init: function(position, typePosition) {
-        this.type = this.types[typePosition];
-
-        this.position = position;
-
-        this.bmp = new createjs.Bitmap(gGameEngine.bonusesImg);
-        var pixels = Utils.convertToBitmapPosition(position);
-        this.bmp.x = pixels.x;
-        this.bmp.y = pixels.y;
-        this.bmp.sourceRect = new createjs.Rectangle(typePosition * 32, 0, 32, 32);
-        gGameEngine.stage.addChild(this.bmp);
-    },
-
-    destroy: function() {
-        gGameEngine.stage.removeChild(this.bmp);
-        Utils.removeFromArray(gGameEngine.bonuses, this);
-    }
-});
+  this.bmp = new createjs.Bitmap(image);
+  this.bmp.x = this.position.x;
+  this.bmp.y = this.position.y;
+};

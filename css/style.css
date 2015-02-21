@@ -1,53 +1,120 @@
- .container {
-    width: 545px;
+html {
+  height: 100%;
+  overflow: hidden;
 }
 
-#game {
-    margin: auto;
-    text-align: center;
+body {
+  height: 100%;
+  background-image: url( "../resources/img/bomberman_grass.png");
 }
 
-.footer .alert {
-    text-align: center;
-    line-height: 35px;
+#renderBox {
+  height: 95%;
+  margin-top: 1.5%;
+  text-align: center;
 }
 
-.footer .alert img {
-    margin-top: -3px;
-    margin-right: 5px;
+.bomberman_loadingText {
+  text-align: center;
+  margin-top: 19%;
+  font-size: 2.1em;
+  font-family: Verdana, sans-serif;
+  color: white;
+  font-weight: bold;
+
+  text-shadow: 2px 2px 0px rgba(0, 0, 0, 1);
 }
 
-h1 {
-    line-height: 64px;
-    margin-bottom: 0;
+.redText {
+  color: #FF4444;
+  display: inline-block;
+  font-size: 3em;
 }
 
-.html5 {
-    background: url('../img/html5.png');
-    width: 64px;
-    height: 64px;
-    display: block;
-    float: left;
-    margin-right: 10px;
+#bomberman_map {
+  display: block;
+  margin: 0 auto;
+
+  background-image: url("../resources/img/bomberman_grass.png");
+  box-shadow: 0 0 5px 3px #2C080B;
+
+  transition: opacity 0.3s;
 }
 
-.html5 span {
-    display: none;
+#bomberman_notifications {
+  background-image: url("../resources/img/bomberman_grass.png");
+  margin: 0 auto;
+  color: white;
+  box-shadow: 0 0 5px 3px #2C080B;
+
+  z-index: -1;
+  position: relative;
+  top: -15%;
+
+  font-family: "Comic Sans", sans-serif;
+
+  transition: top 0.6s, opacity 0.3s;
+  -webkit-transition:  top 0.6s, opacity 0.3s;
+  -moz-transition:  top 0.6s, opacity 0.3s;
+  -o-transition:  top 0.6s, opacity 0.3s;
 }
 
-h1 strong {
-    color: #FF4444;
+#bomberman_notifications > div {
+  width: 100%;
+  height: 100%;
+  background-color: rgba(15, 62, 17, 0.66);
+  opacity: 0.4;
+
+  position: absolute;
 }
 
-.credits {
-    color: gray;
+#bomberman_p1_score {
+  font-size: 0.6em;
+  float: left;
+  margin-left: 10px;
+  margin-top: 2px;
+  padding: 0 3px;
+  border-radius: 0 0 5px 5px;
+
+  background-color: #FFE900;
+  color: black;
+  border: 1px solid black;
 }
 
-.credits a {
-    color: gray;
-    text-decoration: underline;
+#bomberman_p1_score:before {
+  content: 'P1: ';
 }
 
-.credits a:hover {
-    color: black;
+#bomberman_p2_score {
+  font-size: 0.6em;
+  float: right;
+  margin-right: 10px;
+  margin-top: 2px;
+  padding: 0 3px;
+  border-radius: 0 0 5px 5px;
+
+  background-color: #FC0003;
+  color: white;
+  border: 1px solid black;
+}
+
+#bomberman_p2_score:after {
+  content: ' :P2';
+}
+
+#pausedIndicator {
+  position: relative;
+  margin: 0 auto;
+  top: -56%;
+
+  display: none;
+  cursor: default;
+  font-size: 1.35em;
+  text-align: center;
+
+  font-family: Verdana, sans-serif;
+  color: white;
+  font-weight: bold;
+
+  text-shadow: 2px 2px 0px rgba(0, 0, 0, 1);
 }

@@ -1,178 +1,205 @@
-Menu = Class.extend({
-    visible: true,
+var Menu = function ( text, nrPlayers, nrTilesWidth, nrTilesHeight, images, extraDark) {
 
-    views: [],
+  var shadowOffset = 3;
 
-    init: function() {
-        gGameEngine.botsCount = 4;
-        gGameEngine.playersCount = 0;
+  this.content = new createjs.Container();
 
-        this.showLoader();
-    },
+  var bgGfx = new createjs.Graphics()
+    .beginFill( '#000000')
+    .setStrokeStyle(1)
+    .drawRect( gSize, gSize, (nrTilesWidth - 2) * gSize, (nrTilesHeight - 2) * gSize)
+    .endFill();
 
-    show: function(text) {
-        this.visible = true;
+  var bg = new createjs.Shape( bgGfx);
+  bg.alpha = 0.1;
 
-        this.draw(text);
-    },
+  if ( extraDark) {
+    bg.alpha = 0.25;
+  }
 
-    hide: function() {
-        this.visible = false;
+  this.content.addChild(bg);
 
-        for (var i = 0; i < this.views.length; i++) {
-            gGameEngine.stage.removeChild(this.views[i]);
-        }
+  this.nrTilesWidth = nrTilesWidth;
+  this.nrTilesHeight = nrTilesHeight;
+  this.images = images;
+  this.text = text;
 
-        this.views = [];
-    },
+  // The text of the menu
+  var mainText = new createjs.Text( text[0], 'bold 55px Helvetica', '#ffffff');
+  mainText.textBaseline = 'alphabetic';
+  var mainBounds = mainText.getBounds();
+  mainText.x = ( gSize * this.nrTilesWidth - mainBounds.width) / 2;
+  mainText.y = gSize * 6.5;
 
-    update: function() {
-        if (this.visible) {
-            for (var i = 0; i < this.views.length; i++) {
-                gGameEngine.moveToFront(this.views[i]);
-            }
-        }
-    },
+  var mainTextShadow = new createjs.Text( text[0], 'bold 55px Helvetica', '#000000');
+  mainTextShadow.textBaseline = 'alphabetic';
+  mainTextShadow.x = mainText.x + shadowOffset;
+  mainTextShadow.y = mainText.y + shadowOffset;
+  mainTextShadow.alpha = 0.5;
 
-    setHandCursor: function(btn) {
-        btn.addEventListener('mouseover', function() {
-            document.body.style.cursor = 'pointer';
-        });
-        btn.addEventListener('mouseout', function() {
-            document.body.style.cursor = 'auto';
-        });
-    },
+  // if text has two elements than it means this is a game over menu
+  if (text[1]) {
+    var secoText = new createjs.Text( text[1], 'bold 30px Helvetica', '#ffffff');
+    secoText.textBaseline = 'alphabetic';
+    var secoBounds = secoText.getBounds();
+    secoText.x = ( gSize * this.nrTilesWidth - secoBounds.width) / 2;
+    secoText.y = gSize * 8;
 
-    setMode: function(mode) {
-        this.hide();
+    var secoTextShadow = new createjs.Text( text[1], 'bold 30px Helvetica', '#000000');
+    secoTextShadow.textBaseline = 'alphabetic';
+    secoTextShadow.x = secoText.x + shadowOffset;
+    secoTextShadow.y = secoText.y + shadowOffset;
+    secoTextShadow.alpha = 0.5;
 
-        if (mode == 'single') {
-            gGameEngine.botsCount = 3;
-            gGameEngine.playersCount = 1;
-        } else {
-            gGameEngine.botsCount = 2;
-            gGameEngine.playersCount = 2;
-        }
+    this.content.addChild( mainTextShadow);
+    this.content.addChild( mainText);
+    this.content.addChild( secoTextShadow);
+    this.content.addChild( secoText);
 
-        gGameEngine.playing = true;
-        gGameEngine.restart();
-    },
+    var nextText = new createjs.Text( 'Play again', 'bold 32px Helvetica', '#ffffff');
+    var nextBounds = nextText.getBounds();
+    nextText.x = (gSize * this.nrTilesWidth - nextBounds.width) / 2;
+    nextText.y = gSize * (this.nrTilesHeight / 2 + 2.5);
 
-    draw: function(text) {
-        var that = this;
+    var nextTextShadow = new createjs.Text( 'Play again', 'bold 32px Helvetica', '#000000');
+    nextTextShadow.x = nextText.x + shadowOffset;
+    nextTextShadow.y = nextText.y + shadowOffset;
+    nextTextShadow.alpha = 0.5;
 
-        // semi-transparent black background
-        var bgGraphics = new createjs.Graphics().beginFill("rgba(0, 0, 0, 0.5)").drawRect(0, 0, gGameEngine.size.w, gGameEngine.size.h);
-        var bg = new createjs.Shape(bgGraphics);
-        gGameEngine.stage.addChild(bg);
-        this.views.push(bg);
+    this.next = new createjs.Shape( new createjs.Graphics()
+      .beginFill( '#000000')
+      .drawRect( nextText.x - 5, nextText.y - 5, nextBounds.width + 10, nextBounds.height + 10)
+      .endFill());
+    this.next.alpha = 0.01;
 
-        // game title
-        text = text || [{text: 'Bomber', color: '#ffffff'}, {text: 'girl', color: '#ff4444'}];
+    this.content.addChild( nextTextShadow);
+    this.content.addChild( nextText);
+    this.content.addChild( this.next);
+  } else {
+    this.createMenuImages();
+    this.content.addChild( mainTextShadow);
+    this.content.addChild( mainText);
 
-        var title1 = new createjs.Text(text[0].text, "bold 35px Helvetica", text[0].color);
-        var title2 = new createjs.Text(text[1].text, "bold 35px Helvetica", text[1].color);
+    var textSingle = new createjs.Text( 'Singleplayer', 'bold 32px Verdana', '#ffffff');
+    var textSingleBounds = textSingle.getBounds();
+    textSingle.x = (gSize * this.nrTilesWidth - textSingleBounds.width) / 2;
+    textSingle.y = gSize * (this.nrTilesHeight / 2 + 1.5);
 
-        var titleWidth = title1.getMeasuredWidth() + title2.getMeasuredWidth();
+    var textSingleShadow = new createjs.Text( 'Singleplayer', 'bold 32px Verdana', '#000000');
+    textSingleShadow.x = textSingle.x + shadowOffset;
+    textSingleShadow.y = textSingle.y + shadowOffset;
+    textSingleShadow.alpha = 0.5;
 
-        title1.x = gGameEngine.size.w / 2 - titleWidth / 2;
-        title1.y = gGameEngine.size.h / 2 - title1.getMeasuredHeight() / 2 - 80;
-        gGameEngine.stage.addChild(title1);
-        this.views.push(title1);
+    this.singlePlayerText = new createjs.Shape( new createjs.Graphics()
+      .beginFill( '#000000')
+      .drawRect( textSingle.x - 5, textSingle.y - 5, textSingleBounds.width + 10, textSingleBounds.height + 10)
+      .endFill());
+    this.singlePlayerText.alpha = 0.01;
 
-        title2.x = title1.x + title1.getMeasuredWidth();
-        title2.y = gGameEngine.size.h / 2 - title1.getMeasuredHeight() / 2 - 80;
-        gGameEngine.stage.addChild(title2);
-        this.views.push(title2);
+    this.content.addChild( textSingleShadow);
+    this.content.addChild( textSingle);
+    this.content.addChild( this.singlePlayerText);
 
-        // modes buttons
-        var modeSize = 110;
-        var modesDistance = 20;
-        var modesY = title1.y + title1.getMeasuredHeight() + 40;
+    if (nrPlayers > 1) {
+      var textMulti = new createjs.Text( 'Multiplayer', 'bold 32px Verdana', '#FF4444');
+      var textMultiBounds = textMulti.getBounds();
+      textMulti.x = textSingle.x + 12;
+      textMulti.y = gSize * (this.nrTilesHeight / 2 + 2.8);
 
-        // singleplayer button
-        var singleX = gGameEngine.size.w / 2 - modeSize - modesDistance;
-        var singleBgGraphics = new createjs.Graphics().beginFill("rgba(0, 0, 0, 0.5)").drawRect(singleX, modesY, modeSize, modeSize);
-        var singleBg = new createjs.Shape(singleBgGraphics);
-        gGameEngine.stage.addChild(singleBg);
-        this.views.push(singleBg);
-        this.setHandCursor(singleBg);
-        singleBg.addEventListener('click', function() {
-            that.setMode('single');
-        });
+      var textMultiShadow = new createjs.Text( 'Multiplayer', 'bold 32px Verdana', '#000000');
+      textMultiShadow.x = textMulti.x + shadowOffset;
+      textMultiShadow.y = textMulti.y + shadowOffset;
+      textMultiShadow.alpha = 0.5;
 
-        var singleTitle1 = new createjs.Text("single", "16px Helvetica", "#ff4444");
-        var singleTitle2 = new createjs.Text("player", "16px Helvetica", "#ffffff");
-        var singleTitleWidth = singleTitle1.getMeasuredWidth() + singleTitle2.getMeasuredWidth();
-        var modeTitlesY = modesY + modeSize - singleTitle1.getMeasuredHeight() - 20;
+      this.multiPlayerText = new createjs.Shape( new createjs.Graphics()
+        .beginFill( '#000000')
+        .drawRect( textMulti.x - 5, textMulti.y - 5, textMultiBounds.width + 10, textMultiBounds.height + 10)
+        .endFill());
+      this.multiPlayerText.alpha = 0.01;
 
-        singleTitle1.x = singleX + (modeSize - singleTitleWidth) / 2;
-        singleTitle1.y = modeTitlesY;
-        gGameEngine.stage.addChild(singleTitle1);
-        this.views.push(singleTitle1)
-
-        singleTitle2.x = singleTitle1.x + singleTitle1.getMeasuredWidth();
-        singleTitle2.y = modeTitlesY;
-        gGameEngine.stage.addChild(singleTitle2);
-        this.views.push(singleTitle2)
-
-        var iconsY = modesY + 13;
-        var singleIcon = new createjs.Bitmap("img/betty.png");
-        singleIcon.sourceRect = new createjs.Rectangle(0, 0, 48, 48);
-        singleIcon.x = singleX + (modeSize - 48) / 2;
-        singleIcon.y = iconsY;
-        gGameEngine.stage.addChild(singleIcon);
-        this.views.push(singleIcon);
-
-        // multiplayer button
-        var multiX = gGameEngine.size.w / 2 + modesDistance;
-        var multiBgGraphics = new createjs.Graphics().beginFill("rgba(0, 0, 0, 0.5)").drawRect(multiX, modesY, modeSize, modeSize);
-        var multiBg = new createjs.Shape(multiBgGraphics);
-        gGameEngine.stage.addChild(multiBg);
-        this.views.push(multiBg);
-        this.setHandCursor(multiBg);
-        multiBg.addEventListener('click', function() {
-            that.setMode('multi');
-        });
-
-        var multiTitle1 = new createjs.Text("multi", "16px Helvetica", "#99cc00");
-        var multiTitle2 = new createjs.Text("player", "16px Helvetica", "#ffffff");
-        var multiTitleWidth = multiTitle1.getMeasuredWidth() + multiTitle2.getMeasuredWidth();
-
-        multiTitle1.x = multiX + (modeSize - multiTitleWidth) / 2;
-        multiTitle1.y = modeTitlesY;
-        gGameEngine.stage.addChild(multiTitle1);
-        this.views.push(multiTitle1)
-
-        multiTitle2.x = multiTitle1.x + multiTitle1.getMeasuredWidth();
-        multiTitle2.y = modeTitlesY;
-        gGameEngine.stage.addChild(multiTitle2);
-        this.views.push(multiTitle2)
-
-        var multiIconGirl = new createjs.Bitmap("img/betty.png");
-        multiIconGirl.sourceRect = new createjs.Rectangle(0, 0, 48, 48);
-        multiIconGirl.x = multiX + (modeSize - 48) / 2 - 48/2 + 8;
-        multiIconGirl.y = iconsY;
-        gGameEngine.stage.addChild(multiIconGirl);
-        this.views.push(multiIconGirl);
-
-        var multiIconBoy = new createjs.Bitmap("img/betty2.png");
-        multiIconBoy.sourceRect = new createjs.Rectangle(0, 0, 48, 48);
-        multiIconBoy.x = multiX + (modeSize - 48) / 2 + 48/2 - 8;
-        multiIconBoy.y = iconsY;
-        gGameEngine.stage.addChild(multiIconBoy);
-        this.views.push(multiIconBoy);
-    },
-
-    showLoader: function() {
-        var bgGraphics = new createjs.Graphics().beginFill("#000000").drawRect(0, 0, gGameEngine.size.w, gGameEngine.size.h);
-        var bg = new createjs.Shape(bgGraphics);
-        gGameEngine.stage.addChild(bg);
-
-        var loadingText = new createjs.Text("Loading...", "20px Helvetica", "#FFFFFF");
-        loadingText.x = gGameEngine.size.w / 2 - loadingText.getMeasuredWidth() / 2;
-        loadingText.y = gGameEngine.size.h / 2 - loadingText.getMeasuredHeight() / 2;
-        gGameEngine.stage.addChild(loadingText);
-        gGameEngine.stage.update();
+      this.content.addChild( textMultiShadow);
+      this.content.addChild( textMulti);
+      this.content.addChild( this.multiPlayerText);
     }
-});
+
+    /*var copyrightText = new createjs.Text( 'Music by: RoccoW', 'bold 19px Helvetica', '#FFFFFF');
+    copyrightText.x = gSize * nrTilesWidth - copyrightText.getBounds().width - 10;
+    copyrightText.y = gSize * nrTilesHeight - copyrightText.getBounds().height - 10;
+
+    var copyrightBox = new createjs.Shape( new createjs.Graphics()
+      .beginFill( '#000000')
+      .drawRect( copyrightText.x - 2, copyrightText.y - 2, copyrightText.getBounds().width + 4, copyrightText.getBounds().height + 4)
+      .endFill());
+    copyrightBox.alpha = 0.01;
+
+    copyrightBox.addEventListener('click', function () {
+      window.location.href = 'http://freemusicarchive.org/music/RoccoW/';
+    });
+
+    this.content.addChild(copyrightText);
+    this.content.addChild(copyrightBox);*/
+  }
+};
+
+Menu.prototype.onSinglePlayer = function ( handleSingle) {
+  this.singlePlayerText.addEventListener( 'click', handleSingle);
+};
+
+Menu.prototype.onMultiPlayer = function ( handleMulti) {
+  this.multiPlayerText.addEventListener( 'click', handleMulti);
+};
+
+Menu.prototype.onNext = function ( handleNext) {
+  this.next.addEventListener( 'click', handleNext);
+};
+
+Menu.prototype.createMenuImages = function () {
+  for (var j = 1; j <= this.nrTilesHeight; j++) {
+    var wood = new Wood(this.images['wood'], {x: 1, y: j});
+    this.content.addChild(wood.bmp);
+
+    wood = new Wood(this.images['wood'], {x: this.nrTilesWidth, y: j});
+    this.content.addChild(wood.bmp);
+  }
+
+  for (var i = 2; i <= this.nrTilesWidth - 1; i++) {
+    var wood = new Wood(this.images['wood'], {x: i, y: 1});
+    this.content.addChild(wood.bmp);
+
+    wood = new Wood(this.images['wood'], {x: i, y: this.nrTilesHeight});
+    this.content.addChild(wood.bmp);
+  }
+
+  for (i = 3; i < 6; i += 2) {
+    for (var j = 3; j < 6; j += 2) {
+      var wall = new Wall( {x: i, y: j}, this.images['wall']);
+      this.content.addChild( wall.bmp);
+
+      wall = new Wall( {x: this.nrTilesWidth - i + 1, y: j}, this.images['wall']);
+      this.content.addChild( wall.bmp);
+
+      wall = new Wall( {x: this.nrTilesWidth - i + 1, y: this.nrTilesHeight - j + 1}, this.images['wall']);
+      this.content.addChild( wall.bmp);
+
+      wall = new Wall( {x: i, y: this.nrTilesHeight - j + 1}, this.images['wall']);
+      this.content.addChild( wall.bmp);
+    }
+  }
+
+  var wall = new Wall( {x: 3, y: Math.floor(this.nrTilesHeight / 2) + 1}, this.images['wall']);
+  this.content.addChild( wall.bmp);
+
+  wall = new Wall( {x: this.nrTilesWidth - 2, y: Math.floor(this.nrTilesHeight / 2) + 1}, this.images['wall']);
+  this.content.addChild( wall.bmp);
+
+  var playerImage = new Player( this.images['betty'], this.images['shadow'], {x: this.nrTilesWidth / 2 - 1, y: 4}, null);
+  playerImage.bmp.scaleX = 2;
+  playerImage.bmp.scaleY = 2;
+  playerImage.bmp.gotoAndPlay( 'down');
+  this.content.addChild(playerImage.bmp);
+
+  var bombImage = new Bomb( this.images['bomb'], this.images['shadow'], {x: this.nrTilesWidth / 2 + 1, y: 4}, 1, null);
+  bombImage.bmp.scaleX = 2;
+  bombImage.bmp.scaleY = 2;
+  this.content.addChild(bombImage.bmp);
+};

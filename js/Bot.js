@@ -1,344 +1,230 @@
-Bot = Player.extend({
-    /**
-     * Current direction
-     */
-    direction: 'up',
-    lastDirection: '',
 
-    /**
-     * Directions that are not allowed to go because of collision
-     */
-    excludeDirections: [],
+/**
+ * @author Gabriel Titerlea
+ *
+ * The Bot class representing the bots in the game
+ * @param image
+ *  the image displayed on the map for the player
+ * @param shadow
+ *  the image for the bot shadow
+ * @param gridPosition
+ *  the initial grid position of the player
+ */
+var Bot = function ( image, shadow, gridPosition) {
 
-    /**
-     * Current X axis direction
-     */
-    dirX: 0,
+  this.nearWood = false;
+  this.nearPlayer = false;
 
-    /**
-     * Current Y axis direction
-     */
-    dirY: -1,
+  this.speed = 1.81;
+  this.bombStrength = 1;
 
-    /**
-     * Target position on map we are heading to
-     */
-    previousPosition: {},
-    targetPosition: {},
-    targetBitmapPosition: {},
+  this.previousGridPos = gridPosition;
+  this.gridPosition = gridPosition;
 
-    bombsMax: 1,
+  this.destination = Utils.convertToPixelPosition(gridPosition);
 
-    wait: false,
+  this.direction = Direction.NONE;
+  this.previousDirection = Direction.NONE;
 
-    startTimerMax: 60,
-    startTimer: 0,
-    started: false,
+  this.escapeBomb = null;
+  this.availableBombs = 1;
 
-    init: function(position) {
-        this._super(position);
-        this.findTargetPosition();
-        this.startTimerMax = Math.random() * 60;
-    },
+  this.willCollide = false;
 
-    update: function() {
-         if (!this.alive) {
-            this.fade();
-            return;
-        }
-
-        this.wait = false;
-
-        if (!this.started && this.startTimer < this.startTimerMax) {
-            this.startTimer++;
-            if (this.startTimer >= this.startTimerMax) {
-                this.started = true;
-            }
-            this.animate('idle');
-            this.wait = true;
-        }
-
-        if (this.targetBitmapPosition.x == this.bmp.x && this.targetBitmapPosition.y == this.bmp.y) {
-
-            // If we bumped into the wood, burn it!
-            // If we are near player, kill it!
-            if (this.getNearWood() || this.wantKillPlayer()) {
-                this.plantBomb();
-            }
-
-            // When in safety, wait until explosion
-            if (this.bombs.length) {
-                if (this.isSafe(this.position)) {
-                    this.wait = true;
-                }
-            }
-
-            if (!this.wait) {
-                this.findTargetPosition();
-            }
-        }
-
-        if (!this.wait) {
-            this.moveToTargetPosition();
-        }
-        this.handleBonusCollision();
-
-        if (this.detectFireCollision()) {
-            // Bot has to die
-            this.die();
-        }
-
-    },
-
-    /**
-     * Finds the next tile position where we should move.
-     */
-    findTargetPosition: function() {
-        var target = { x: this.position.x, y: this.position.y };
-        target.x += this.dirX;
-        target.y += this.dirY;
-
-        var targets = this.getPossibleTargets();
-        // Do not go the same way if possible
-        if (targets.length > 1) {
-            var previousPosition = this.getPreviousPosition();
-            for (var i = 0; i < targets.length; i++) {
-                var item = targets[i];
-                if (item.x == previousPosition.x && item.y == previousPosition.y) {
-                    targets.splice(i, 1);
-                }
-            }
-        }
-        this.targetPosition = this.getRandomTarget(targets);
-        if (this.targetPosition && this.targetPosition.x) {
-            this.loadTargetPosition(this.targetPosition);
-            this.targetBitmapPosition = Utils.convertToBitmapPosition(this.targetPosition);
-        }
-    },
-
-    /**
-     * Moves a step forward to target position.
-     */
-    moveToTargetPosition: function() {
-        this.animate(this.direction);
-
-        var velocity = this.velocity;
-        var distanceX = Math.abs(this.targetBitmapPosition.x - this.bmp.x);
-        var distanceY = Math.abs(this.targetBitmapPosition.y - this.bmp.y);
-        if (distanceX > 0 && distanceX < this.velocity) {
-            velocity = distanceX;
-        } else if (distanceY > 0 && distanceY < this.velocity) {
-            velocity = distanceY;
-        }
-
-        var targetPosition = { x: this.bmp.x + this.dirX * velocity, y: this.bmp.y + this.dirY * velocity };
-        if (!this.detectWallCollision(targetPosition)) {
-            this.bmp.x = targetPosition.x;
-            this.bmp.y = targetPosition.y;
-        }
-
-        this.updatePosition();
-    },
-
-    /**
-     * Returns near grass tiles.
-     */
-    getPossibleTargets: function() {
-        var targets = [];
-        for (var i = 0; i < 4; i++) {
-            var dirX;
-            var dirY;
-            if (i == 0) { dirX = 1; dirY = 0; }
-            else if (i == 1) { dirX = -1; dirY = 0; }
-            else if (i == 2) { dirX = 0; dirY = 1; }
-            else if (i == 3) { dirX = 0; dirY = -1; }
-
-            var position = { x: this.position.x + dirX, y: this.position.y + dirY };
-            if (gGameEngine.getTileMaterial(position) == 'grass' && !this.hasBomb(position)) {
-                targets.push(position);
-            }
-        }
-
-        var safeTargets = [];
-        for (var i = 0; i < targets.length; i++) {
-            var target = targets[i];
-            if (this.isSafe(target)) {
-                safeTargets.push(target);
-            }
-        }
-
-        var isLucky = Math.random() > 0.3;
-        return safeTargets.length > 0 && isLucky ? safeTargets : targets;
-    },
-
-    /**
-     * Loads vectors and animation name for target position.
-     */
-    loadTargetPosition: function(position) {
-        this.dirX = position.x - this.position.x;
-        this.dirY = position.y - this.position.y;
-        if (this.dirX == 1 && this.dirY == 0) {
-            this.direction = 'right';
-        } else if (this.dirX == -1 && this.dirY == 0) {
-            this.direction = 'left';
-        } else if (this.dirX == 0 && this.dirY == 1) {
-            this.direction = 'down';
-        } else if (this.dirX == 0 && this.dirY == -1) {
-            this.direction = 'up';
-        }
-    },
-
-    /**
-     * Gets previous position by current position and direction vector.
-     */
-    getPreviousPosition: function() {
-        var previous = { x: this.targetPosition.x, y: this.targetPosition.y };
-        previous.x -= this.dirX;
-        previous.y -= this.dirY;
-        return previous;
-    },
-
-    /**
-     * Returns random item from array.
-     */
-    getRandomTarget: function(targets) {
-        return targets[Math.floor(Math.random() * targets.length)];
-    },
-
-    applyBonus: function(bonus) {
-        this._super(bonus);
-
-        // It is too dangerous to have more bombs available
-        this.bombsMax = 1;
-    },
-
-    /**
-     * Game is over when no bots and one player left.
-     */
-    die: function() {
-        this._super();
-        var botsAlive = false;
-
-        // Cache bots
-        var bots = [];
-        for (var i = 0; i < gGameEngine.bots.length; i++) {
-            bots.push(gGameEngine.bots[i]);
-        }
-
-        for (var i = 0; i < bots.length; i++) {
-            var bot = bots[i];
-            // Remove bot
-            if (bot == this) {
-                gGameEngine.bots.splice(i, 1);
-            }
-            if (bot.alive) {
-                botsAlive = true;
-            }
-        }
-
-        if (!botsAlive && gGameEngine.countPlayersAlive() == 1) {
-            gGameEngine.gameOver('win');
-        }
-    },
-
-    /**
-     * Checks whether there is any wood around.
-     */
-    getNearWood: function() {
-        for (var i = 0; i < 4; i++) {
-            var dirX;
-            var dirY;
-            if (i == 0) { dirX = 1; dirY = 0; }
-            else if (i == 1) { dirX = -1; dirY = 0; }
-            else if (i == 2) { dirX = 0; dirY = 1; }
-            else if (i == 3) { dirX = 0; dirY = -1; }
-
-            var position = { x: this.position.x + dirX, y: this.position.y + dirY };
-            if (gGameEngine.getTileMaterial(position) == 'wood') {
-                return gGameEngine.getTile(position);
-            }
-        }
-    },
-
-    /**
-     * Checks whether player is near. If yes and we are angry, return true.
-     */
-    wantKillPlayer: function() {
-        var isNear = false;
-
-        for (var i = 0; i < 4; i++) {
-            var dirX;
-            var dirY;
-            if (i == 0) { dirX = 1; dirY = 0; }
-            else if (i == 1) { dirX = -1; dirY = 0; }
-            else if (i == 2) { dirX = 0; dirY = 1; }
-            else if (i == 3) { dirX = 0; dirY = -1; }
-
-            var position = { x: this.position.x + dirX, y: this.position.y + dirY };
-            for (var j = 0; j < gGameEngine.players.length; j++) {
-                var player = gGameEngine.players[j];
-                if (player.alive && Utils.comparePositions(player.position, position)) {
-                    isNear = true;
-                    break;
-                }
-            }
-        }
-
-        var isAngry = Math.random() > 0.5;
-        if (isNear && isAngry) {
-            return true;
-        }
-    },
-
-    /**
-     * Places the bomb in current position
-     */
-    plantBomb: function() {
-        for (var i = 0; i < gGameEngine.bombs.length; i++) {
-            var bomb = gGameEngine.bombs[i];
-            if (Utils.comparePositions(bomb.position, this.position)) {
-                return;
-            }
-        }
-
-        if (this.bombs.length < this.bombsMax) {
-            var bomb = new Bomb(this.position, this.bombStrength);
-            gGameEngine.stage.addChild(bomb.bmp);
-            this.bombs.push(bomb);
-            gGameEngine.bombs.push(bomb);
-
-            var that = this;
-            bomb.setExplodeListener(function() {
-                Utils.removeFromArray(that.bombs, bomb);
-                that.wait = false;
-            });
-        }
-    },
-
-    /**
-     * Checks whether position is safe  and possible explosion cannot kill us.
-     */
-    isSafe: function(position) {
-        for (var i = 0; i < gGameEngine.bombs.length; i++) {
-            var bomb = gGameEngine.bombs[i];
-            var fires = bomb.getDangerPositions();
-            for (var j = 0; j < fires.length; j++) {
-                var fire = fires[j];
-                if (Utils.comparePositions(fire, position)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    },
-
-    hasBomb: function(position) {
-        for (var i = 0; i < gGameEngine.bombs.length; i++) {
-            var bomb = gGameEngine.bombs[i];
-            if (Utils.comparePositions(bomb.position, position)) {
-                return true;
-            }
-        }
-        return false;
+  var spriteSheet = new createjs.SpriteSheet({
+    images: [image],
+    frames: {width: gSize, height: gSize},
+    animations: {
+      idle: [0, 0, false],
+      down: [0, 3, 'down', 0.1],
+      left: [4, 7, 'left', 0.1],
+      up: [8, 11, 'up', 0.1],
+      right: [12, 15, 'right', 0.1]
     }
-});
+  });
+  this.bmp = new createjs.Sprite(spriteSheet, 'idle');
+
+  this.position = Utils.convertToPixelPosition( gridPosition);
+
+  this.effectOffset = 9;
+
+  this.bmp.x = this.position.x;
+  this.bmp.y = this.position.y - this.effectOffset;
+
+  this.shadowOffset = 22;
+
+  this.shadow = new createjs.Bitmap(shadow);
+  this.shadow.x = this.position.x;
+  this.shadow.y = this.position.y + this.shadowOffset - this.effectOffset;
+};
+
+/**
+ * @author Gabriel Titerlea
+ *
+ * Change the bot's moving direction and its animation
+ * @param direction
+ *  The direction in which the bot will move
+ */
+Bot.prototype.move = function ( direction) {
+
+  this.previousDirection = this.direction;
+  this.direction = direction;
+
+  if (direction !== Direction.NONE) {
+    // update the animation only if it's a mew one
+    if (direction.name.charAt(0) !== this.previousDirection.name.charAt(0)) {
+      this.bmp.gotoAndPlay(this.direction.name);
+    }
+  } else {
+    // DIRECTION.NONE staying still
+    if (direction.name.charAt(0) !== this.previousDirection.name.charAt(0)) {
+      this.bmp.gotoAndStop(this.previousDirection.name);
+    }
+  }
+};
+
+/**
+ * @author Gabriel Titerlea
+ *
+ * Place a bomb on the current location if a bomb is not there already and if
+ * the bot still has available bombs
+ * @param bombImage
+ *  The image of the bomb
+ * @param bombShadow
+ *  The image for the bomb shadow
+ */
+Bot.prototype.placeBomb = function ( bombImage, bombShadow) {
+
+  var gridPosition = Utils.convertToGridPosition( this.position);
+
+  if ( this.availableBombs > 0 && this.escapeBomb === null) {
+    this.availableBombs--;
+    return new Bomb( bombImage, bombShadow, gridPosition, this.bombStrength, this);
+  }
+
+  return null;
+};
+
+/**
+ * @author Gabriel Titerlea
+ *
+ * When a bomb explodes this method will be called to increase the available bombs
+ */
+Bot.prototype.recoverBomb = function () {
+  this.availableBombs++;
+};
+
+Bot.prototype.applyBonus = function ( bonus) {
+  switch (bonus.type) {
+  case 'speed_bonus':
+    this.speed += 0.25;
+    break;
+  case 'bomb_bonus':
+    this.availableBombs++; // commented to decrease the suicide rate of the bots :D
+    break;
+  case 'fire_bonus':
+    this.bombStrength++;
+    break;
+  }
+};
+
+/**
+ * @author Gabriel Titerlea
+ *
+ * Sets the new destination of the bot and calls the move method to update the animtaion accordingly
+ */
+Bot.prototype.setDestination = function ( destination) {
+  if  (this.gridPosition.x > destination.x) {
+    this.move( Direction.LEFT);
+  } else if (this.gridPosition.x < destination.x) {
+    this.move( Direction.RIGHT);
+  } else if (destination.y < this.gridPosition.y) {
+    this.move( Direction.UP);
+  } else if (destination.y > this.gridPosition.y) {
+    this.move( Direction.DOWN);
+  } else {
+    this.move( Direction.NONE);
+  }
+
+  this.destination = Utils.convertToPixelPosition( destination);
+};
+
+/**
+ * @author Gabriel Titerlea
+ */
+Bot.prototype.updateGridPosition = function () {
+
+  var gridPosition = Utils.convertToGridPosition( this.position);
+
+  if (gridPosition.x !== this.gridPosition.x || gridPosition.y !== this.gridPosition.y) {
+    this.previousGridPos = this.gridPosition;
+    this.gridPosition = gridPosition;
+  }
+};
+
+/**
+ * @author Gabriel Titerlea
+ *
+ * Update the bots position based on his direction and speed
+ * if the move won't cause a collision
+ * */
+Bot.prototype.update = function () {
+  var distanceX = Math.abs(this.destination.x - this.position.x);
+  var distanceY = Math.abs(this.destination.y - this.position.y);
+
+  // update the position
+  var speed = this.speed;
+
+  // if the distance to the destination is less than a step only move as much as is needed to reach the destination
+  if (distanceX > 0 && distanceX < speed) {
+    speed = distanceX;
+  } else if (distanceY > 0 && distanceY < speed) {
+    speed = distanceY;
+  }
+
+  this.position.x += this.direction.x * speed;
+  this.position.y += this.direction.y * speed;
+
+  // update the image location based on the position
+  this.bmp.x = this.position.x;
+  this.bmp.y = this.position.y - this.effectOffset;
+
+  this.shadow.x = this.position.x;
+  this.shadow.y = this.position.y + this.shadowOffset - this.effectOffset;
+
+  this.updateGridPosition();
+};
+
+Bot.prototype.fade = function ( leaveStage) {
+
+  var timer = 0;
+
+  var bmp = this.bmp;
+  var shadow = this.shadow;
+
+  bmp.filters = [ new createjs.ColorMatrixFilter([
+    0.30,0.30,0.40,0,0, // red component
+    0.35,0.35,0.30,0,0, // green component
+    0.30,0.30,0.30,0,0, // blue component
+    0,0,0,1,0  // alpha
+  ])];
+
+  bmp.cache( 0,0, 100, 100);
+  bmp.updateCache( 0,0, 100, 100);
+
+  var fade = setInterval( function() {
+
+    timer++;
+    if (timer > 25) {
+      bmp.y -= 0.7;
+
+      bmp.alpha -= 0.045;
+      shadow.alpha -= 0.045;
+    }
+
+    if ( bmp.alpha <= 0) {
+      clearInterval(fade);
+      leaveStage();
+    }
+  }, 30);
+};
