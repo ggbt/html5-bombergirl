@@ -1,6 +1,6 @@
 window.addEventListener( 'load', function () {
 
-  Bombergirl.render();
-  Bombergirl.fill();
+  Bombergirl.prepare();
+  Bombergirl.start();
 
 }, false);

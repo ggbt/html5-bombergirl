@@ -86,7 +86,7 @@ var Bombergirl = {
   onKeyDown: null,
   onKeyUp: null,
 
-  render:  function () {
+  prepare:  function () {
     this.canvas = dom.createCanvas( 'bomberman_map', null, "", gSize * this.nrTilesWidth, gSize * this.nrTilesHeight);
     // document.getElementById( "quit").addEventListener( "click", this.handleClickQuitButtonEvent);
 
@@ -106,7 +106,7 @@ var Bombergirl = {
     this.onTouchEnd = this.input.onTouchEnd.bind( this.input);
   },
 
-  fill:  function () {
+  start:  function () {
 
     // change the number of tiles on width to be lower than the number of tiles
     // on height to take advantage of the available space
@@ -480,6 +480,11 @@ var Bombergirl = {
     }
   },
 
+  /**
+  * @author Gabriel Titerlea
+  *
+  * Todo: the players may collect some special bonuses for more points in the future
+  */
   createOANumbers: function () {
     var owner  = 1;
     var color = this.yellow;
@@ -1060,7 +1065,7 @@ var Bombergirl = {
     }
   },
 
-  // ****************###################***********************
+  // ****************######################********************
 
   dangerMap: null,
   rewardMap: null,
