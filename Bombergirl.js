@@ -816,7 +816,7 @@ var Bombergirl = {
       if ( !player.dead) {
         this.bonusCollision( player);
         // this.OANumbersCollision( this['player' + (i + 1)]);
-        // this.playerFireCollision( player);
+        this.playerFireCollision( player);
       }
     }
 
